@@ -1,105 +1,139 @@
-# Raffle Smart Contract
+# A Fair Smart Contract Raffle
+
+A decentralized and automated raffle system built on blockchain technology, utilizing Chainlink VRF for verifiable randomness and Chainlink Automation for trustless execution.
 
 ## Overview
 
-**Raffle** is a smart contract designed to create a decentralized raffle system on the Ethereum blockchain. It utilizes Chainlink's Verifiable Random Function (VRF) to ensure fair and random winner selection. This project is built using the Foundry toolkit, which provides a fast and modular environment for Ethereum application development.
-
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contract Structure](#contract-structure)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
+This project implements a fully automated raffle system where:
+- Users can enter by paying a set entrance fee
+- A winner is automatically and fairly selected at regular intervals
+- Uses Chainlink VRF (Verifiable Random Function) for provably fair winner selection
+- Leverages Chainlink Automation for automatic draws
+- Implements a robust testing suite
 
 ## Features
 
-- **Decentralized Raffle**: Participants can enter the raffle by sending Ether.
-- **Random Winner Selection**: Uses Chainlink VRF for secure and verifiable randomness.
-- **Event Logging**: Emits events for key actions like entering the raffle and picking a winner.
-- **Easy Deployment**: Simple deployment scripts included.
+- **Fair Entry System**: Fixed entrance fee required to participate
+- **Automated Execution**: No manual intervention needed for picking winners
+- **Verifiable Randomness**: Chainlink VRF v2.5 ensures provably fair winner selection
+- **Time-Based Draws**: Configurable intervals between raffles
+- **Transparent**: Fully verifiable on-chain logic
+- **State Management**: Proper handling of raffle states (OPEN and CALCULATING)
+- **Gas Efficient**: Optimized for minimal gas consumption
 
-## Installation
+## Technical Details
 
-To get started with the Raffle smart contract, follow these steps:
+### Contract Architecture
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/raffle.git
-   cd raffle
-   ```
+The project consists of several key contracts:
 
-2. **Initialize submodules**:
-   ```bash
-   git submodule update --init --recursive
-   ```
+- `Raffle.sol`: Main contract implementing the raffle logic
+- `DeployRaffle.s.sol`: Script for deploying the raffle
+- `HelperConfig.s.sol`: Configuration management for different networks
+- `Interactions.s.sol`: Helper scripts for contract interactions
 
-3. **Install Foundry**:
-   Ensure you have Foundry installed. If not, you can install it by following the instructions on the [Foundry documentation](https://book.getfoundry.sh/).
+### Key Dependencies
 
-4. **Install dependencies**:
-   ```bash
-   forge install
-   ```
+- Solidity ^0.8.19
+- Chainlink VRF V2.5
+- Forge/Foundry for testing and deployment
+- Solmate for optimized contract implementations
 
-## Usage
+### Testing
 
-### Build the Contract
+Comprehensive test suite available in `test/unit/RaffleTest.t.sol`, covering:
+- Initialization states
+- Entry conditions
+- Player recording
+- Event emissions
+- State transitions
+- Upkeep checks
+- Winner selection
 
-To compile the smart contract, run:
+## Getting Started
+
+### Prerequisites
+
+- Foundry installed
+- Node.js and npm (for additional tooling)
+- An RPC URL for deployment
+- LINK tokens for VRF funding (on mainnet/testnet)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd raffle-contract
+```
+
+2. Install dependencies:
+```bash
+forge install
+```
+
+3. Compile contracts:
 ```bash
 forge build
 ```
 
-### Run Tests
-
-To execute the tests, use:
+4. Run tests:
 ```bash
 forge test
 ```
 
-### Deploy the Contract
+### Deployment
 
-To deploy the contract, you can use the following command:
+1. Set up your environment variables:
 ```bash
-forge script script/DeployRaffle.s.sol:DeployRaffle --rpc-url <your_rpc_url> --private-key <your_private_key>
+cp .env.example .env
+# Fill in your environment variables
 ```
 
-### Enter the Raffle
+2. Deploy to a network:
+```bash
+forge script script/DeployRaffle.s.sol --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
 
-Participants can enter the raffle by sending Ether to the `enterRaffle` function. Ensure that the amount sent is greater than or equal to the entrance fee.
+## Usage
 
-## Contract Structure
+### Entering the Raffle
 
-The Raffle contract is structured as follows:
+Users can enter the raffle by calling the `enterRaffle()` function with the required entrance fee:
 
-- **State Variables**: Holds the entrance fee, players, and raffle state.
-- **Functions**:
-  - `enterRaffle()`: Allows users to enter the raffle.
-  - `checkUpKeep()`: Checks if the conditions to pick a winner are met.
-  - `performUpkeep()`: Executes the winner selection process.
-  - `fulfillRandomWords()`: Handles the random number returned by Chainlink VRF.
+```solidity
+raffle.enterRaffle{value: entranceFee}()
+```
 
-## Testing
+### Checking Raffle Status
 
-1. Write Deploy scripts
-  1. Note, these deploy scripts will not work on zkSync.
-2. Write tests
-  1. Local Chain
-  2. Forked Testnet
-  3. Forked Mainnet
+Several view functions are available:
+- `getEntranceFee()`: Get the required entrance fee
+- `getRaffleState()`: Check if raffle is OPEN or CALCULATING
+- `getPlayer(uint256 index)`: Get player at specific index
+- `getNumberOfPlayers()`: Get total number of players
+
+## Security Considerations
+
+- Implements CEI (Checks-Effects-Interactions) pattern
+- Uses custom errors for gas efficiency
+- Proper access control mechanisms
+- Comprehensive error handling
+- VRF v2.5 for secure randomness
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Author
+
+Saksham Gupta
 
 ## Acknowledgments
 
-- [Foundry](https://book.getfoundry.sh/) for the development toolkit.
-- [Chainlink](https://chain.link/) for the VRF service.
+- Chainlink VRF team for randomness solution
+- Foundry team for development framework
