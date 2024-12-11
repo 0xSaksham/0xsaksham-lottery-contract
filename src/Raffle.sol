@@ -111,16 +111,16 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function checkUpKeep(
         bytes memory /* checkData */
-    ) public view  returns (bool upKeepNeeded, bytes memory /* performData */) {
-        bool isOpen =  RaffleState.OPEN == s_raffleState;
+    ) public view returns (bool upKeepNeeded, bytes memory /* performData */) {
+        bool isOpen = RaffleState.OPEN == s_raffleState;
         bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
         bool hasPlayers = s_players.length > 0;
         bool hasBalance = address(this).balance > 0;
 
-        console.log("isOpen: ", isOpen);
-        console.log("timePassed: ", timePassed);
-        console.log("hasPlayers: ", hasPlayers);
-        console.log("hasBalance: ", hasBalance);
+        // console.log("isOpen: ", isOpen);
+        // console.log("timePassed: ", timePassed);
+        // console.log("hasPlayers: ", hasPlayers);
+        // console.log("hasBalance: ", hasBalance);
 
         upKeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance);
         return (upKeepNeeded, "0x0");
@@ -129,7 +129,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     // 1. Get a random number ✅
     // 2. Use the generated random number to pick winner ✅
     // 3. Call the pickWinner again after the lottery closes (typical part as smart contracts are not easily automated!)
-    function performUpkeep(bytes calldata /* performData */) external  {
+    function performUpkeep(bytes calldata /* performData */) external {
         // check to see if enough time has passed!
         (bool upKeepNeeded, ) = checkUpKeep("");
         if (!upKeepNeeded) {
