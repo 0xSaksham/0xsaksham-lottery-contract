@@ -84,7 +84,12 @@ The Raffle contract is structured as follows:
 
 ## Testing
 
-The project includes tests to ensure the functionality of the smart contract. You can add more tests in the `test` directory to cover additional scenarios.
+1. Write Deploy scripts
+  1. Note, these deploy scripts will not work on zkSync.
+2. Write tests
+  1. Local Chain
+  2. Forked Testnet
+  3. Forked Mainnet
 
 ## Contributing
 

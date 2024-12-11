@@ -20,10 +20,11 @@
 // view & pure functions
 
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {console} from "forge-std/console.sol";
 
 /**
  * @title A Raffle Contract
@@ -31,7 +32,7 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
  * @notice This contract for creating a sample raffle
  * @dev Implements Chainlink VRF v2.5
  */
-abstract contract Raffle is VRFConsumerBaseV2Plus {
+contract Raffle is VRFConsumerBaseV2Plus {
     /*Errors */
     error Raffle__SendMoreToEnterRaffle();
     error Raffle__TransferFailed();
@@ -40,6 +41,7 @@ abstract contract Raffle is VRFConsumerBaseV2Plus {
         uint256 numPlayers,
         uint RaffleState
     );
+    error Raffle__RaffleNotOpen();
 
     /* Type Declarations */
     enum RaffleState {
@@ -86,6 +88,10 @@ abstract contract Raffle is VRFConsumerBaseV2Plus {
         if (msg.value < i_entranceFee) {
             revert Raffle__SendMoreToEnterRaffle();
         }
+
+        if (s_raffleState != RaffleState.OPEN) {
+            revert Raffle__RaffleNotOpen();
+        }
         // require(msg.value >= i_entranceFee, Raffle__SendMoreToEnterRaffle); this works with highly specific solidity versions and more expensive than the used one
         s_players.push(payable(msg.sender)); // everytime you use storage variable, use events: WHY? See below
         // 1. Makes Migration easier
@@ -105,20 +111,25 @@ abstract contract Raffle is VRFConsumerBaseV2Plus {
 
     function checkUpKeep(
         bytes memory /* checkData */
-    ) public view returns (bool upKeepNeeded, bytes memory /* performData */) {
-        bool isOpen = s_raffleState == RaffleState.OPEN;
-        bool timePassed = (block.timestamp - s_lastTimeStamp) >= i_interval;
+    ) public view  returns (bool upKeepNeeded, bytes memory /* performData */) {
+        bool isOpen =  RaffleState.OPEN == s_raffleState;
+        bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
         bool hasPlayers = s_players.length > 0;
         bool hasBalance = address(this).balance > 0;
 
-        upKeepNeeded = isOpen && timePassed && hasPlayers && hasBalance;
+        console.log("isOpen: ", isOpen);
+        console.log("timePassed: ", timePassed);
+        console.log("hasPlayers: ", hasPlayers);
+        console.log("hasBalance: ", hasBalance);
+
+        upKeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance);
         return (upKeepNeeded, "0x0");
     }
 
     // 1. Get a random number ✅
     // 2. Use the generated random number to pick winner ✅
     // 3. Call the pickWinner again after the lottery closes (typical part as smart contracts are not easily automated!)
-    function performUpkeep(bytes calldata /* performData */) external {
+    function performUpkeep(bytes calldata /* performData */) external  {
         // check to see if enough time has passed!
         (bool upKeepNeeded, ) = checkUpKeep("");
         if (!upKeepNeeded) {
@@ -160,12 +171,11 @@ abstract contract Raffle is VRFConsumerBaseV2Plus {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
-        (bool success, ) = recentWinner.call{value: address(this).balance}("");
-
-        s_raffleState = RaffleState.OPEN;
         s_players = new address payable[](0);
+        s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
         emit WinnerPicked(s_recentWinner);
+        (bool success, ) = recentWinner.call{value: address(this).balance}("");
 
         // Interactions (External Contract Interactions)
         if (!success) {
@@ -176,7 +186,19 @@ abstract contract Raffle is VRFConsumerBaseV2Plus {
     /**
      * Getter Functions
      */
-    function getEntranceFee() public view returns (uint256) {
+    function getEntranceFee() external view returns (uint256) {
         return i_entranceFee;
+    }
+
+    function getRaffleState() external view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getPlayer(uint256 indexOfPlayer) external view returns (address) {
+        return s_players[indexOfPlayer];
+    }
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
     }
 }
