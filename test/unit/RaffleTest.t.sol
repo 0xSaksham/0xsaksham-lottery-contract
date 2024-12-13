@@ -9,17 +9,20 @@ import {Test} from "forge-std/Test.sol";
 import {Raffle} from "src/Raffle.sol";
 import {DeployRaffle} from "script/DeployRaffle.s.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {console} from "forge-std/console.sol";
+import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
 contract RaffleTest is Test {
     Raffle public raffle;
     HelperConfig public helperConfig;
 
-    uint256 entranceFee;
-    uint256 interval;
-    address vrfCoordinator;
-    bytes32 gasLane;
-    uint256 subscriptionId;
-    uint32 callbackGasLimit;
+    uint256 private entranceFee;
+    uint256 private interval;
+    address private vrfCoordinator;
+    bytes32 private gasLane;
+    uint256 private subscriptionId;
+    uint32 private callbackGasLimit;
 
     address public PLAYER = makeAddr("player");
     uint256 public constant STARTING_PLAYER_BALANCE = 10 ether;
@@ -162,6 +165,51 @@ contract RaffleTest is Test {
             )
         );
         raffle.performUpkeep("");
+    }
+
+    modifier raffleEntered() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    // What if we need to get data from emitted events in our tests?
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId()
+        public
+        raffleEntered
+    {
+        // Arrange
+
+        // Act
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+
+        // Assert
+        Raffle.RaffleState raffleState = raffle.getRaffleState();
+        assert(uint256(requestId) > 0);
+        assert(uint256(raffleState) == 1);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         FULLFILL RANDOM WORDS
+    //////////////////////////////////////////////////////////////*/
+
+    function testFulfillrandomWordsCanOnlyBeCalledAfterPerformUpkeep()
+        public
+        raffleEntered
+    {
+        // Arrange
+        // Act
+        // Assert
+        vm.expectRevert(VRFCoordinatorV2_5Mock.InvalidRequest.selector);
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
+            0,
+            address(raffle)
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
